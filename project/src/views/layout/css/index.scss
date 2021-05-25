@@ -1,0 +1,10 @@
+.app-wrapper {
+  height: 100%;
+  .wrapper-container {
+    height: 100%;
+    /deep/.main-container {
+      padding-bottom: 0px;
+      overflow: unset;
+    }
+  }
+}
