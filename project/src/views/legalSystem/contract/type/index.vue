@@ -224,25 +224,22 @@ export default {
     // 获取二级数据
     getLvlList: function() {
       this.$api.getLvlList().then(res => {
-        console.log("获取二级数据 0", res);
+        console.log("获取二级数据", res);
         this.plateListArr = res;
       });
     },
     // 获取列表数据
-    getList: function() {
+    getList: function(search) {
       const para = {
         pageBean: {
           page: "1",
           pageSize: "20",
           showTotal: true
-        }
-        // params:{
-        //   parentName:"业务",
-        //   dataName:"合同",
-        // }
+        },
+        params:search
       };
       this.$api.list(para).then(res => {
-        console.log("获取二级数据 0", res);
+        console.log("获取列表数据", res);
         this.tableData = res.rows;
       });
     },
@@ -281,31 +278,31 @@ export default {
         this.popupQueryPara.dataCode = this.popupQuery.dataCode;
       }
       console.log("xxxxxx", this.popupQueryPara);
-      this.$api.add(this.popupQueryPara).then(res => {
-        console.log("获取二级数据 pjw", res);
-        // this.plateListArr = res;
-        // 获取列表数据
-        this.getList();
-      });
+      if(this.dialogTitle === "新增"){
+        this.$api.add(this.popupQueryPara).then(res => {
+          console.log("获取二级数据 pjw", res);
+          // this.plateListArr = res;
+          // 获取列表数据
+          this.getList();
+        });
+      }else{
+        this.$api.update(this.popupQueryPara).then(res => {
+          console.log("获取二级数据 pjw", res);
+          // this.plateListArr = res;
+          // 获取列表数据
+          this.getList();
+        });
+      }
     },
     // 查询按钮点击事件
     loadData(query = {}) {
-      console.log("1", this.searchQuery.parentId);
+      console.log("1", this.searchQuery.plate);
       console.log("2", this.searchQuery.type);
-      // this.tableLoading = true
-      // this.searchQuery = {
-      //   ...this.searchQuery,
-      //   ...query,
-      //   page: query.page || 1
-      // }
-      // this.mockApi(this.searchQuery)
-      // .then((res) => {
-      //   this.data = res.data
-      //   this.pageTotal = 999
-      // })
-      // .finally(() => {
-      //   this.tableLoading = false
-      // })
+      const params = {
+        parentName:this.searchQuery.plate,
+        dataName:this.searchQuery.type
+      }
+      this.getList(params);
     },
     // 重置按钮点击事件
     reset(query = {}) {
@@ -414,7 +411,6 @@ export default {
 }
 .listView {
   width: 100%;
-  background: orange;
   margin-top: 80px;
   margin-bottom: 60px;
   overflow: hidden;
@@ -436,5 +432,8 @@ export default {
 }
 .popup {
   width: 60%;
+}
+.listView__list{
+  margin-top: 40px;
 }
 </style>

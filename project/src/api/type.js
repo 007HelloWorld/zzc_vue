@@ -21,7 +21,7 @@ export default {
         return del(`/legal/api/legal/v1/contractType/remove/${params}`)
     },
     // 合同类型管理中 更新接口
-    update() {
+    update(params) {
         return patch("/legal/api/legal/v1/contractType/update", params)
     },
     // 合同类型管理中 获取列表数据
