@@ -72,22 +72,26 @@
       >
         <el-table-column label="业务板块(一级)">
           <template slot-scope="scope">
-            {{scope.row.lvl===1 ? scope.row.dataName:scope.row.parentName}}
+            {{
+              scope.row.lvl === 1 ? scope.row.dataName : scope.row.parentName
+            }}
           </template>
         </el-table-column>
         <el-table-column label="业务板块编码">
           <template slot-scope="scope">
-            {{scope.row.lvl===1 ? scope.row.dataCode:scope.row.parentCode}}
+            {{
+              scope.row.lvl === 1 ? scope.row.dataCode : scope.row.parentCode
+            }}
           </template>
         </el-table-column>
         <el-table-column label="合同类型(二级)">
           <template slot-scope="scope">
-            {{scope.row.lvl===2 ? scope.row.dataName:""}}
+            {{ scope.row.lvl === 2 ? scope.row.dataName : "" }}
           </template>
         </el-table-column>
         <el-table-column label="合同类型编码">
           <template slot-scope="scope">
-            {{scope.row.lvl===2 ? scope.row.dataCode:""}}
+            {{ scope.row.lvl === 2 ? scope.row.dataCode : "" }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="300px">
@@ -113,18 +117,32 @@
         width="30%"
         :before-close="handleClose"
       >
-        <el-form :model="popupQuery" class="demo-form-inline">
-          <el-form-item label="业务级别">
-            <el-select v-model="popupQuery.dataName" :disabled="dialogTitle === '修改' ? true : false" class="popup">
-              <el-option label="业务板块一级" value="业务板块一级"></el-option>
-              <el-option label="业务板块二级" value="业务板块二级"></el-option>
+        <el-form
+          :model="popupQuery"
+          class="demo-form-inline"
+          :rules="rules"
+          ref="popupQueryRef"
+        >
+          <el-form-item label="业务级别" prop="lvl">
+            <el-select
+              v-model="popupQuery.lvl"
+              :disabled="dialogTitle === '修改' ? true : false"
+              class="popup"
+            >
+              <el-option label="业务板块一级" value="1"></el-option>
+              <el-option label="业务板块二级" value="2"></el-option>
             </el-select>
           </el-form-item>
           <el-form-item
             label="业务板块"
-            v-if="popupQuery.dataName === '业务板块二级'"
+            v-if="popupQuery.lvl === '2'"
+            prop="parentId"
           >
-            <el-select v-model="popupQuery.parentId" class="popup">
+            <el-select
+              v-model="popupQuery.parentId"
+              :disabled="dialogTitle === '修改' ? true : false"
+              class="popup"
+            >
               <el-option
                 v-for="item in plateListArr"
                 :key="item.id"
@@ -134,25 +152,30 @@
               </el-option>
             </el-select>
           </el-form-item>
-          <el-form-item label="业务名称">
+          <el-form-item label="业务名称" prop="dataName">
             <el-input
-              v-model="popupQuery.name"
+              v-model="popupQuery.dataName"
               placeholder="请输入业务名称"
               class="popup"
             ></el-input>
           </el-form-item>
-          <el-form-item label="业务编码">
-            <el-input 
-              v-model="popupQuery.dataCode" 
+          <el-form-item label="业务编码" prop="dataCode">
+            <el-input
+              v-model="popupQuery.dataCode"
               placeholder="请输入业务编码"
-              :disabled="dialogTitle === '修改' ? true : false" 
-              class="popup">
+              :disabled="dialogTitle === '修改' ? true : false"
+              class="popup"
+            >
             </el-input>
           </el-form-item>
         </el-form>
         <span slot="footer" class="dialog-footer">
-          <el-button @click="dialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="handleOk">确 定</el-button>
+          <el-button @click="cancel('popupQueryRef')">取 消</el-button>
+          <el-button
+            type="primary"
+            @click="handleOk('popupQueryRef',popupQuery)"
+            >确 定</el-button
+          >
         </span>
       </el-dialog>
     </div>
@@ -171,6 +194,7 @@
 </template>
 
 <script>
+import { Toast } from "vant";
 export default {
   props: {
     showPagination: {
@@ -200,16 +224,12 @@ export default {
       },
       // 新增里面数据源
       popupQuery: {
-        dataName: "", // 业务级别
-        parentId: {}, // 业务板块
-        name: "", // 业务名称
-        dataCode: "", // 业务编码
-      },
-      popupQueryPara: {
+        title: "", //业务级别标题
         lvl: "", // 层级
+        parentName: "", //业务板块
         dataName: "", // 业务名称
-        parentId: "", // 父级id
-        dataCode: "" // 业务编码
+        dataCode: "", // 业务编码
+        id: "" //修改时需要的id
       },
       showAdvancedSearch: false,
       formInline: {
@@ -217,7 +237,19 @@ export default {
         region: ""
       },
       dialogVisible: false,
-      dialogTitle: ""
+      dialogTitle: "",
+      rules: {
+        lvl: [{ required: true, message: "请选择业务级别", trigger: "change" }],
+        parentId: [
+          { required: true, message: "请选择业务板块", trigger: "change" }
+        ],
+        dataName: [
+          { required: true, message: "请输入业务名称", trigger: "blur" }
+        ],
+        dataCode: [
+          { required: true, message: "请输入业务编码", trigger: "blur" }
+        ]
+      }
     };
   },
   methods: {
@@ -236,7 +268,7 @@ export default {
           pageSize: "20",
           showTotal: true
         },
-        params:search
+        params: search
       };
       this.$api.list(para).then(res => {
         console.log("获取列表数据", res);
@@ -245,63 +277,60 @@ export default {
     },
     // 新增按钮点击事件
     added(e) {
+      // 获取业务名称二级数据
+      this.getLvlList();
       console.log("业务级别", e);
-      this.popupQuery = {};
+      // this.popupQuery = {};
       this.dialogTitle = "新增";
       this.dialogVisible = true;
     },
-    // 弹窗上确定按钮点击事件
-    handleOk() {
-      console.log("提示框上点击了确定按钮");
+    // 弹窗上取消按钮点击事件
+    cancel(popupQueryRef) {
       this.dialogVisible = false;
-      if (this.popupQuery.dataName === undefined) {
-        this.popupQuery.dataName = "";
-      }
-      if (this.popupQuery.parentId === undefined) {
-        this.popupQuery.parentId = "";
-      }
-      if (this.popupQuery.name === undefined) {
-        this.popupQuery.name = "";
-      }
-      if (this.popupQuery.dataCode === undefined) {
-        this.popupQuery.dataCode = "";
-      }
-      //新增接口
-      if (this.popupQuery.dataName === "业务板块一级") {
-        this.popupQueryPara.lvl = "1";
-        this.popupQueryPara.dataName = this.popupQuery.name;
-        this.popupQueryPara.dataCode = this.popupQuery.dataCode;
-      } else {
-        this.popupQueryPara.lvl = "2";
-        this.popupQueryPara.dataName = this.popupQuery.name;
-        this.popupQueryPara.parentId = this.popupQuery.parentId;
-        this.popupQueryPara.dataCode = this.popupQuery.dataCode;
-      }
-      console.log("xxxxxx", this.popupQueryPara);
-      if(this.dialogTitle === "新增"){
-        this.$api.add(this.popupQueryPara).then(res => {
-          console.log("获取二级数据 pjw", res);
-          // this.plateListArr = res;
-          // 获取列表数据
-          this.getList();
-        });
-      }else{
-        this.$api.update(this.popupQueryPara).then(res => {
-          console.log("获取二级数据 pjw", res);
-          // this.plateListArr = res;
-          // 获取列表数据
-          this.getList();
-        });
-      }
+      this.$refs[popupQueryRef].resetFields();
+    },
+    // 弹窗上确定按钮点击事件
+    handleOk(popupQueryRef,popupQuery) {
+      console.log("1111111", popupQuery);
+      console.log("2222222", this.popupQuery);
+      this.$refs[popupQueryRef].validate(valid => {
+        if (valid) {
+          // console.log("提示框上点击了确定按钮", popupQuery);
+          this.popupQuery.lvl = popupQuery.lvl;
+          this.popupQuery.dataName = popupQuery.dataName;
+          this.popupQuery.dataCode = popupQuery.dataCode;
+          this.popupQuery.id = popupQuery.id;
+          console.log("xxxxxx11111", this.popupQuery);
+          console.log("xxxxxx22222", popupQuery);
+          this.dialogVisible = false;
+          if (this.dialogTitle === "新增") {
+            this.$api.add(this.popupQuery).then(res => {
+              console.log("获取二级数据 pjw", res);
+              // 获取列表数据
+              this.getList();
+              this.$refs[popupQueryRef].resetFields();
+            });
+          } else {
+            this.$api.update(this.popupQuery).then(res => {
+              console.log("获取二级数据 pjw", res);
+              // 获取列表数据
+              this.getList();
+            });
+          }
+        } else {
+          console.log("error submit!!");
+          return false;
+        }
+      });
     },
     // 查询按钮点击事件
     loadData(query = {}) {
       console.log("1", this.searchQuery.plate);
       console.log("2", this.searchQuery.type);
       const params = {
-        parentName:this.searchQuery.plate,
-        dataName:this.searchQuery.type
-      }
+        parentName: this.searchQuery.plate,
+        dataName: this.searchQuery.type
+      };
       this.getList(params);
     },
     // 重置按钮点击事件
@@ -312,24 +341,25 @@ export default {
     modifyClick(row) {
       this.dialogTitle = "修改";
       this.dialogVisible = true;
-      if (row.lvl == 1){ // 业务一级
+      console.log("获取列表数据", row);
+      if (row.lvl == 1) {
+        // 业务一级
         this.popupQuery = {
-          dataName: "业务板块一级",
-          name: row.dataName,
+          dataName: row.dataName,
           dataCode: row.dataCode,
+          id: row.id,
+          lvl: row.lvl + ``
         };
-      }else{
+      } else {
         this.popupQuery = {
-          dataName: "业务板块二级",
+          dataName: row.dataName,
           name: row.parentName,
           dataCode: row.dataCode,
+          id: row.id,
+          lvl: row.lvl + ``
         };
-        console.log("1", row.parentName);
-        console.log("2", row.parentId);
       }
-      console.log(this.plateListArr, "3");
-
-      console.log(row, "table行内容");
+      console.log("查看等级", this.popupQuery.lvl);
     },
     // 删除按钮点击事件
     deleteClick(row) {
@@ -338,12 +368,16 @@ export default {
 
       this.$api.remove(row.id).then(res => {
         console.log("删除数据", res);
-        // this.plateListArr = res;
+        if (res.state == false) {
+          console.log("删除数据失败", res.message);
+          Toast(res.message);
+          Toast.position = middle;
+        } else {
+          console.log("删除数据成功", res.message);
+        }
         // 获取列表数据
         this.getList();
       });
-
-
     },
     handleShowAdvancedSearch() {
       this.showAdvancedSearch = !this.showAdvancedSearch;
@@ -371,7 +405,8 @@ export default {
     },
     handleClose() {
       this.dialogVisible = false;
-      this.popupQuery = {};
+      this.$refs[popupQueryRef].resetFields();
+      // this.popupQuery = {};
     },
     // 切分页点击数据获取处
     handleCurrentChange(e) {
@@ -433,7 +468,10 @@ export default {
 .popup {
   width: 60%;
 }
-.listView__list{
+.listView__list {
   margin-top: 40px;
+}
+.el-form-item__label {
+  width: 80px;
 }
 </style>
