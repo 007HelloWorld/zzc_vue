@@ -44,39 +44,58 @@
                 :model="searchQuery"
                 class="search__unfoldArea__top"
               >
-                <el-form-item label="业务板块">
-                  <el-select v-model="searchQuery.plate" class="popup">
-                    <el-option label="物业管理" value="物业管理"></el-option>
-                    <el-option
-                      label="世茂美凯龙"
-                      value="世茂美凯龙"
-                    ></el-option>
-                  </el-select>
-                </el-form-item>
-                <el-form-item label="合同类型">
-                  <el-select v-model="searchQuery.type" class="popup">
-                    <el-option
-                      label="基础合同类"
-                      value="基础合同类"
-                    ></el-option>
-                    <el-option
-                      label="通用文件类"
-                      value="通用文件类"
-                    ></el-option>
-                  </el-select>
-                </el-form-item>
-                <el-form-item label="合同模板名称">
-                  <el-input
-                    v-model="searchQuery.name"
-                    placeholder="请输入内容"
-                  ></el-input>
-                </el-form-item>
-                <el-form-item label="启用状态">
-                  <el-select v-model="searchQuery.state" class="popup">
-                    <el-option label="启用" value="启用"></el-option>
-                    <el-option label="停用" value="停用"></el-option>
-                  </el-select>
-                </el-form-item>
+                <el-row>
+                  <el-col :span="6">
+                    <el-form-item label="业务板块">
+                      <el-select
+                        v-model="searchQuery.bizId"
+                        placeholder="请选择业务板块"
+                        @change="changeSearchPlate"
+                      >
+                        <el-option
+                          v-for="item in queryTypeListData"
+                          :key="item.id"
+                          :label="item.dataName"
+                          :value="item.id"
+                        >
+                        </el-option>
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="合同类型">
+                      <el-select
+                        v-model="searchQuery.typeId"
+                        placeholder="请选择合同类型"
+                        @change="changeSearchType"
+                      >
+                        <el-option
+                          v-for="item in searchSecond"
+                          :key="item.id"
+                          :label="item.dataName"
+                          :value="item.id"
+                        >
+                        </el-option>
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="合同模板名称">
+                      <el-input
+                        v-model="searchQuery.name"
+                        placeholder="请输入内容"
+                      ></el-input>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="启用状态">
+                      <el-select v-model="searchQuery.common">
+                        <el-option label="启用" value="1"></el-option>
+                        <el-option label="停用" value="0"></el-option>
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                </el-row>
               </el-form>
               <div class="search__unfoldArea__bottom">
                 <el-button
@@ -114,11 +133,12 @@
         :cell-style="{ 'text-align': 'center' }"
         :header-cell-style="{ 'text-align': 'center' }"
         class="listView__list"
+        ref="multipleTable"
       >
         <el-table-column type="selection" width="55"></el-table-column>
         <el-table-column label="合同模板编码">
           <template slot-scope="scope">
-            {{ scope.row.bizName }}
+            {{ scope.row.code }}
           </template>
         </el-table-column>
         <el-table-column label="业务板块">
@@ -128,40 +148,37 @@
         </el-table-column>
         <el-table-column label="合同类型">
           <template slot-scope="scope">
-            {{ scope.row.bizName }}
+            {{ scope.row.typeName }}
           </template>
         </el-table-column>
         <el-table-column label="合同模板名称">
           <template slot-scope="scope">
-            {{ scope.row.bizName }}
+            {{ scope.row.name }}
           </template>
         </el-table-column>
         <el-table-column label="最新版本号">
           <template slot-scope="scope">
-            {{ scope.row.bizName }}
+            {{ scope.row.version }}
           </template>
         </el-table-column>
         <el-table-column label="启用状态">
           <template slot-scope="scope">
-            {{ scope.row.bizName }}
+            {{ scope.row.enabledFlag == 1 ? "启用" : "停用" }}
           </template>
         </el-table-column>
         <el-table-column label="创建时间">
           <template slot-scope="scope">
-            {{ scope.row.bizName }}
+            {{ scope.row.creationDate }}
           </template>
         </el-table-column>
         <el-table-column label="创建人">
           <template slot-scope="scope">
-            {{ scope.row.bizName }}
+            {{ scope.row.creatName }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="400px">
           <template slot-scope="scope">
-            <el-button
-              @click="viewClick(scope.row)"
-              type="primary"
-              size="small"
+            <el-button @click="viewClick(scope.row)" type="primary" size="small"
               >查看模板</el-button
             >
             <el-button
@@ -174,12 +191,14 @@
               @click="enabledClick(scope.row)"
               type="primary"
               size="small"
+              v-if="scope.row.enabledFlag === 0"
               >启用</el-button
             >
             <el-button
               type="primary"
               size="small"
               @click="disableClick(scope.row)"
+              v-if="scope.row.enabledFlag === 1"
               >停用</el-button
             >
             <el-button
@@ -207,6 +226,7 @@
                   class="popup"
                   @change="changePlate"
                   placeholder="请选择业务板块"
+                  :disabled="dialogTitle === '更新' ? true : false"
                 >
                   <el-option
                     v-for="item in queryTypeListData"
@@ -223,8 +243,9 @@
                 <el-select
                   v-model="createQuery.typeId"
                   class="popup"
-                  placeholder="请选择业务板块"
+                  placeholder="请选择合同类型"
                   @change="changeType"
+                  :disabled="dialogTitle === '更新' ? true : false"
                 >
                   <el-option
                     v-for="item in second"
@@ -240,12 +261,22 @@
           <el-row>
             <el-col :span="12">
               <el-form-item label="合同模板名称" id="ja" prop="name">
-                <el-input v-model="createQuery.name" class="popup" placeholder="请输入合同模板名称"></el-input>
+                <el-input
+                  v-model="createQuery.name"
+                  class="popup"
+                  placeholder="请输入合同模板名称"
+                  :disabled="dialogTitle === '更新' ? true : false"
+                ></el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="合同模板编码" id="ja" prop="code">
-                <el-input v-model="createQuery.code" class="popup" placeholder="请输入合同模板编号"></el-input>
+                <el-input
+                  v-model="createQuery.code"
+                  class="popup"
+                  placeholder="请输入合同模板编号"
+                  :disabled="dialogTitle === '更新' ? true : false"
+                ></el-input>
               </el-form-item>
             </el-col>
           </el-row>
@@ -259,15 +290,32 @@
                 ></el-input>
               </el-form-item>
             </el-col>
+            <el-col :span="12">
+              <el-form-item label="是否为通用合同" id="ja" prop="common">
+                <el-radio v-model="createQuery.common" label="1">是</el-radio>
+                <el-radio v-model="createQuery.common" label="0">否</el-radio>
+              </el-form-item>
+            </el-col>
           </el-row>
         </el-form>
         <!-- 合同模板 -->
-        <el-button
-          type="primary"
+        <el-upload
           class="topView__btn"
-          @click="createHandle('创建合同模板')"
-          >上传合同模板</el-button
+          :action="fileUploadUrl"
+          :on-success="handleUploadFileSuccess"
+          :limit="1"
+          :on-change="uploadFileChange"
+          :before-upload="beforeFileUpload"
+          :on-preview="handlePreview"
+          :on-remove="handleRemove"
+          :before-remove="beforeRemove"
+          :on-exceed="handleExceed"
+          :file-list="uploadFileList"
+          accept=".doc,.docx"
         >
+          <el-button size="small" type="primary">上传合同模板</el-button>
+        </el-upload>
+
         <el-table
           :data="fileDate"
           border
@@ -276,11 +324,9 @@
           :header-cell-style="{ 'text-align': 'center' }"
           class="listView__list"
         >
-          <el-table-column
-            prop="one"
-            label="文件名"
-            :span="10"
-          ></el-table-column>
+          <el-table-column label="文件名" :span="10">{{
+            createQuery.fileName
+          }}</el-table-column>
           <el-table-column
             prop="two"
             label="上传时间"
@@ -297,15 +343,15 @@
             </template>
           </el-table-column>
         </el-table>
-        <div class="dialog__tip">
-          注:需填写的部分请使用{ }符号,例: 甲方: {xxxx}
-        </div>
-        <!-- 合同标签 -->
         <el-form :model="createQuery" class="demo-form-inline">
           <el-row>
             <el-col :span="12">
-              <el-form-item label="合同标签">
-                <el-select v-model="createQuery.labelName" class="popup" placeholder="请选择合同标签">
+              <el-form-item label="合同关键词">
+                <el-select
+                  v-model="createQuery.labelName"
+                  class="popup"
+                  placeholder="请选择合同关键词"
+                >
                   <el-option
                     v-for="item in getTypeKey"
                     :key="item.id"
@@ -436,18 +482,23 @@ export default {
   },
   data() {
     return {
+      fileUploadUrl:
+        process.env.VUE_APP_BASE_URL + "/portal/system/file/v1/upload",
       // 弹窗的标题
       dialogTitle: "",
       // 下载数据
       downloadRecord: [],
       // 高级搜索里面数据源
       searchQuery: {
-        plate: "", // 业务板块
-        type: "", // 合同类型
-        name: "", // 合同模板名称
-        state: "" // 启用状态
+        bizId: null, // 业务板块id
+        bizName: null, // 业务板块名称
+        typeId: null, // 合同类型id
+        typeName: null, // 合同类型名称
+        name: null, // 合同模板名称
+        common: null // 是否通用 1是 0否
       },
-      second: [],
+      second: [], // 创建合同模板中的合同类型二级数据
+      searchSecond: [], // 顶部搜索区域的合同类型二级数据
       // 创建合同模板数据
       createQuery: {
         bizId: "", // 业务板块id
@@ -457,8 +508,11 @@ export default {
         name: "", // 合同模板名称
         code: "", // 合同模板编码
         version: "", // 版本号
+        common: "", // 是否通用 1是 0否
+        fileId: "", // 上传文件id
+        fileName: "", // 上传文件名称
         path: "", // 上传模板路径
-        labelName: "" // 合同标签名称
+        labelName: null // 合同标签名称
       },
       // 合同标签列表数据
       getTypeKey: {
@@ -520,13 +574,23 @@ export default {
         code: [
           { required: true, message: "请输入合同模板编码", trigger: "blur" }
         ],
-        version: [{ required: true, message: "请输入版本号", trigger: "blur" }]
+        version: [{ required: true, message: "请输入版本号", trigger: "blur" }],
+        common: [
+          {
+            required: true,
+            message: "请选择是否为通用合同类型",
+            trigger: "change"
+          }
+        ]
       },
       dialogVisible: false,
-      showApacheVisible: false
+      showApacheVisible: false,
+      uploadFileList: []
     };
   },
   created() {
+    console.log(" 拿到图片上传地址1 ", this.fileUploadUrl);
+    console.log(" 拿到图片上传地址2 ", process.env);
     // 获取列表数据
     this.templateList();
 
@@ -538,14 +602,14 @@ export default {
   },
   methods: {
     // 获取列表数据
-    templateList: function() {
+    templateList: function(e) {
       const para = {
         pageBean: {
           page: "1",
           pageSize: "20",
           showTotal: true
         },
-        // params: search
+        params: e
       };
       this.$api.templateList(para).then(res => {
         console.log("获取列表数据-------1", res);
@@ -564,48 +628,52 @@ export default {
     },
     // 获取合同标签
     templateGetTypeKey: function() {
-      this.$api.templateGetTypeKey({
+      this.$api
+        .templateGetTypeKey({
           typeKey: "legal_contract_label"
-        }).then(res => {
+        })
+        .then(res => {
           console.log("获取合同标签", res);
           this.getTypeKey = res;
           console.log("获取合同标签数据", this.getTypeKey);
         });
     },
     loadData(e) {
-      console.log("高级搜索点击了查询按钮");
-      if (e.plate === undefined) {
-        this.searchQuery.plate = "";
-      }
-      if (e.type === undefined) {
-        this.searchQuery.type = "";
-      }
-      if (e.name === undefined) {
-        this.searchQuery.name = "";
-      }
-      if (e.state === undefined) {
-        this.searchQuery.state = "";
-      }
-      console.log("业务板块", this.searchQuery.plate);
-      console.log("合同类型", this.searchQuery.type);
-      console.log("合同模板名称", this.searchQuery.name);
-      console.log("启用状态", this.searchQuery.state);
+      console.log("高级搜索点击了查询按钮", this.searchQuery);
+      // this.searchQuery.common =  parseInt(this.searchQuery.common);
+      this.templateList(this.searchQuery);
     },
     // 重置
     reset(query = {}) {
       console.log("点击了重置按钮");
-      this.searchQuery.plate = "";
-      this.searchQuery.type = "";
-      this.searchQuery.name = "";
-      this.searchQuery.state = "";
+      this.searchQuery = {};
+      console.log("点击了重置按钮", this.searchQuery);
     },
     // 导出
     exportTemplate() {
       console.log("导出按钮");
-      this.$api.templateExport().then(res => {
-        // console.log("获取类型级联", res);
-        // this.queryTypeListData = res;
-        // console.log("获取类型级联1", this.queryTypeListData);
+      var queryFilter = {
+        condition:{
+          业务板块:this.searchQuery.bizName,
+          合同类型:this.searchQuery.typeName,
+          合同模板名称:this.searchQuery.name,
+          启用状态: this.searchQuery.common === "1" ? "启用":"停用"
+        },
+        params:{
+          bizId:this.searchQuery.bizId, // 业务板块id
+          typeId:this.searchQuery.typeId, // 合同类型id
+          name:this.searchQuery.name, // 合同模板名称
+          enabledFlag:this.searchQuery.common // 启用状态 1启用 0停用
+        }
+      }
+      var para = {
+        queryFilter:queryFilter
+      }
+      console.log("获取数据",para);
+      this.$api.templateExport(para).then(res => {
+        console.log("获取类型级联", res);
+        this.queryTypeListData = res;
+        console.log("获取类型级联1", this.queryTypeListData);
       });
     },
     // 创建合同模板中取消按钮
@@ -618,19 +686,34 @@ export default {
       console.log("获取创建合同模板数据", this.createQuery);
       this.$refs[createQueryRef].validate(valid => {
         if (valid) {
-          alert("submit!");
           this.dialogVisible = false;
-          // this.$refs[createQueryRef].resetFields();
-          // 创建接口
-          this.$api.templateAdd(this.createQuery).then(res => {
-            if (res.state == true) {
-              console.log("创建成功", res);
-              // 获取列表数据
-              this.templateList();
-            } else {
-              console.log("创建失败", res);
-            }
-          });
+          // 将common转int类型
+          this.createQuery.common = parseInt(this.createQuery.common);
+
+          // 如果是更新标题
+          if (this.dialogTitle === "更新") {
+            // 创建接口
+            this.$api.templateUpdate(this.createQuery).then(res => {
+              if (res.state == true) {
+                console.log("创建成功", res);
+                // 获取列表数据
+                this.templateList();
+              } else {
+                console.log("创建失败", res.message);
+              }
+            });
+          } else {
+            // 创建接口
+            this.$api.templateAdd(this.createQuery).then(res => {
+              if (res.state == true) {
+                console.log("创建成功", res);
+                // 获取列表数据
+                this.templateList();
+              } else {
+                console.log("创建失败", res.message);
+              }
+            });
+          }
         } else {
           console.log("error submit!!");
           return false;
@@ -638,7 +721,7 @@ export default {
       });
     },
     changePlate(e) {
-      console.log(e);
+      console.log("拿到到业务板块数据", e);
       this.second = this.queryTypeListData.filter(
         item => item.id == e
       )[0].children;
@@ -650,6 +733,21 @@ export default {
     changeType(e) {
       console.log("获取二级数据", e);
       this.createQuery.typeName = this.second.filter(
+        item => item.id == e
+      )[0].dataName;
+    },
+    changeSearchPlate(e) {
+      console.log("搜索里面拿到到业务板块数据", e);
+      this.searchSecond = this.queryTypeListData.filter(
+        item => item.id == e
+      )[0].children;
+      this.searchQuery.bizName = this.queryTypeListData.filter(
+        item => item.id == e
+      )[0].dataName;
+    },
+    changeSearchType(e) {
+      console.log("搜索里面获取二级数据", e);
+      this.searchQuery.typeName = this.searchSecond.filter(
         item => item.id == e
       )[0].dataName;
     },
@@ -675,38 +773,57 @@ export default {
     // 更新事件
     updateClick(e) {
       console.log("更新事件", e);
-      this.$api.templateUpdate().then(res => {
-        console.log("获取类型级联", res);
-        this.queryTypeListData = res;
-        console.log("获取类型级联1", this.queryTypeListData);
-      });
+      this.createQuery = e;
+      this.createQuery.common = e.common + ``;
+      this.dialogTitle = "更新";
+      this.dialogVisible = true;
+      // this.$api.templateUpdate().then(res => {
+      //   console.log("获取类型级联", res);
+      //   this.queryTypeListData = res;
+      //   console.log("获取类型级联1", this.queryTypeListData);
+      // });
     },
     // 启用事件
     enabledClick(e) {
       console.log("启用事件", e);
-      this.$api.templateBatchEnable().then(res => {
-        console.log("获取类型级联", res);
-        this.queryTypeListData = res;
-        console.log("获取类型级联1", this.queryTypeListData);
+      const para = {
+        ids: e.id
+      };
+      this.$api.templateBatchEnable(para).then(res => {
+        if ((res.state = true)) {
+          // 获取列表数据
+          this.templateList();
+        }
       });
     },
     // 停用事件
     disableClick(e) {
       console.log("停用事件", e);
-      this.$api.templateBatchDisable().then(res => {
-        console.log("获取类型级联", res);
-        this.queryTypeListData = res;
-        console.log("获取类型级联1", this.queryTypeListData);
+      const para = {
+        ids: e.id
+      };
+      this.$api.templateBatchDisable(para).then(res => {
+        if ((res.state = true)) {
+          // 获取列表数据
+          this.templateList();
+        }
       });
     },
     // 删除
     deleteClick(e) {
       console.log("删除", e);
-      // this.$api.queryTypeList().then(res => {
-      //   console.log("获取类型级联", res);
-      //   this.queryTypeListData = res;
-      //   console.log("获取类型级联1", this.queryTypeListData);
-      // });
+      const para = {
+        ids: e.id + ``
+      };
+      this.$api.templateBatchRemove(para).then(res => {
+        if (res.state == true) {
+          console.log("删除成功");
+          // 获取列表数据
+          this.templateList();
+        } else {
+          console.log("删除失败");
+        }
+      });
     },
     handleClick(row) {
       console.log(row, "table行内容");
@@ -750,6 +867,7 @@ export default {
       }, delay);
     },
     createHandle(e) {
+      this.createQuery = {};
       this.dialogTitle = e;
       this.dialogVisible = true;
     },
@@ -760,14 +878,98 @@ export default {
       this.dialogVisible = false;
       console.log(this.formModal1, "formModal内容");
     },
+    B() {
+      return Promise.resolve("B");
+    },
+    acquireIds() {
+      let selectArr = this.$refs.multipleTable.selection;
+      console.log("启用数据获取", selectArr);
+      // 获取到里面的id
+      let idArr = [];
+      var ids = "";
+      if (selectArr.length > 0) {
+        selectArr.forEach(function(item, index) {
+          console.log("获取数据", item, index);
+          console.log(item.id);
+          idArr.push(item.id);
+        });
+        ids = idArr.join(",");
+        const para = {
+          ids: ids
+        };
+        return Promise.resolve(para);
+      }
+    },
+    // 启用点击事件
     enabledHandle() {
-      console.log("启用");
+      console.log("启用点击事件");
+      this.acquireIds().then(val => {
+        this.$api.templateBatchEnable(val).then(res => {
+          if ((res.state = true)) {
+            // 获取列表数据
+            this.templateList();
+          }
+        });
+      });
     },
+    // 停用点击事件
     disableHandle() {
-      console.log("停用");
+      this.acquireIds().then(val => {
+        this.$api.templateBatchDisable(val).then(res => {
+          if ((res.state = true)) {
+            // 获取列表数据
+            this.templateList();
+          }
+        });
+      });
     },
+    // 删除点击事件
     deleteHandle() {
       console.log("删除");
+      this.acquireIds().then(val => {
+        this.$api.templateBatchRemove(val).then(res => {
+          if ((res.state = true)) {
+            // 获取列表数据
+            this.templateList();
+          }
+        });
+      });
+    },
+    handleUploadFileSuccess(file) {
+      console.log("拿到上传后的数据 handleUploadFileSuccess", file);
+    },
+    beforeFileUpload(file) {
+      console.log("拿到上传后的数据 beforeFileUpload", file);
+    },
+    handlePreview(file) {
+      console.log(file);
+    },
+    handleRemove(file) {
+      console.log(file, "文件被移除了  handleRemove");
+      this.createQuery.fileId = "";
+      this.createQuery.fileName = "";
+      this.createQuery.path = "";
+    },
+    beforeRemove(file) {
+      console.log(file, "文件被移除了  beforeRemove");
+    },
+    handleExceed(file) {
+      console.log(file);
+    },
+    uploadFileChange(file) {
+      let form = new FormData();
+      form.append("file", file.raw);
+      this.$api.templateUploadFile(form).then(res => {
+        if (res.state == true) {
+          const orgData = JSON.parse(res.value);
+          console.log(orgData, "文件上传数据");
+          this.createQuery.fileId = orgData.fileId;
+          this.createQuery.fileName = orgData.fileName;
+          this.createQuery.path = orgData.filePath;
+        } else {
+          console.log(res.message);
+        }
+      });
     }
   }
 };
@@ -851,9 +1053,9 @@ export default {
   }
 }
 #ja .el-form-item__label {
-  width: 120px;
+  width: 140px;
 }
-.dialog__tip {
+.demo-form-inline {
   margin: 20px auto;
 }
 .showApache {

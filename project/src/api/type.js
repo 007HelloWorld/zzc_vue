@@ -52,14 +52,26 @@ export default {
     },
     //启用接口
     templateBatchEnable(params) {
-        return patch("/legal/api/legal/v1/contractTemplate/batchEnable", params)
+        return get("/legal/api/legal/v1/contractTemplate/batchEnable", params)
     },
     //禁停用接口
     templateBatchDisable(params) {
-        return patch("/legal/api/legal/v1/contractTemplate/batchDisable", params)
+        return get("/legal/api/legal/v1/contractTemplate/batchDisable", params)
     },
-    // 模板导出接口
+    // 模板管理导出接口  
     templateExport(params) {
-        return post("/legal/api/legal/v1/contractTemplate/export", params)
+        return post("/legal/api/legal/v1/contractTemplate/export/1", params)
+    },
+    // 附件上传接口
+    templateUploadFile(params) {
+        return post("/portal/system/file/v1/upload", params)
+    },
+    // 多个删除接口
+    templateBatchRemove(params) {
+        return del("/legal/api/legal/v1/contractTemplate/remove", params)
+    },
+    // 模板被使用列表导出接口  
+    templateExport2(params) {
+        return post("/legal/api/legal/v1/contractTemplate/export/2", params)
     },
 }

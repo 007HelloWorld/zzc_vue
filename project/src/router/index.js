@@ -7,7 +7,7 @@ export const constantRouterMap = []
 export const asyncRouterMap = [
   {
     path: '/',
-    redirect: '/legalSystem/contract/type',
+    redirect: '/legalSystem/contract/template',
     meta: {
       public: true,
       hidden: true

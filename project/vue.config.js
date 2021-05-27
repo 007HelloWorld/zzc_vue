@@ -6,7 +6,7 @@ function resolve(dir) {
 }
 
 module.exports = {  
-  publicPath: process.env.VUE_APP_BASE_URL,
+  // publicPath: process.env.VUE_APP_BASE_URL,
   productionSourceMap: false,
   chainWebpack: (config) => {
     // 通过webpack-chain，链式操作修改webpack
