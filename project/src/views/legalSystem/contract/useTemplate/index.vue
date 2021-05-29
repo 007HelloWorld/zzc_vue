@@ -29,39 +29,58 @@
                 :model="searchQuery"
                 class="search__unfoldArea__top"
               >
-                <el-form-item label="业务板块">
-                  <el-select v-model="searchQuery.plate" class="popup">
-                    <el-option label="物业管理" value="物业管理"></el-option>
-                    <el-option
-                      label="世茂美凯龙"
-                      value="世茂美凯龙"
-                    ></el-option>
-                  </el-select>
-                </el-form-item>
-                <el-form-item label="合同类型">
-                  <el-select v-model="searchQuery.type" class="popup">
-                    <el-option
-                      label="基础合同类"
-                      value="基础合同类"
-                    ></el-option>
-                    <el-option
-                      label="通用文件类"
-                      value="通用文件类"
-                    ></el-option>
-                  </el-select>
-                </el-form-item>
-                <el-form-item label="合同模板名称">
-                  <el-input
-                    v-model="searchQuery.name"
-                    placeholder="请输入内容"
-                  ></el-input>
-                </el-form-item>
-                <el-form-item label="启用状态">
-                  <el-select v-model="searchQuery.state" class="popup">
-                    <el-option label="启用" value="启用"></el-option>
-                    <el-option label="停用" value="停用"></el-option>
-                  </el-select>
-                </el-form-item>
+                <el-row>
+                  <el-col :span="6">
+                    <el-form-item label="业务板块">
+                      <el-select
+                        v-model="searchQuery.bizId"
+                        placeholder="请选择业务板块"
+                        @change="changeSearchPlate"
+                      >
+                        <el-option
+                          v-for="item in queryTypeListData"
+                          :key="item.id"
+                          :label="item.dataName"
+                          :value="item.id"
+                        >
+                        </el-option>
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="合同类型">
+                      <el-select
+                        v-model="searchQuery.typeId"
+                        placeholder="请选择合同类型"
+                        @change="changeSearchType"
+                      >
+                        <el-option
+                          v-for="item in searchSecond"
+                          :key="item.id"
+                          :label="item.dataName"
+                          :value="item.id"
+                        >
+                        </el-option>
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="合同模板名称">
+                      <el-input
+                        v-model="searchQuery.name"
+                        placeholder="请输入内容"
+                      ></el-input>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="启用状态">
+                      <el-select v-model="searchQuery.enabledFlag">
+                        <el-option label="启用" value="1"></el-option>
+                        <el-option label="停用" value="0"></el-option>
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                </el-row>
               </el-form>
               <div class="search__unfoldArea__bottom">
                 <el-button
@@ -101,20 +120,52 @@
         class="listView__list"
       >
         <el-table-column type="selection" width="55"></el-table-column>
-        <el-table-column prop="one" label="合同模板编码"></el-table-column>
-        <el-table-column prop="two" label="业务板块"></el-table-column>
-        <el-table-column prop="three" label="合同类型"></el-table-column>
-        <el-table-column prop="four" label="合同模板名称"></el-table-column>
-        <el-table-column prop="five" label="版本号"></el-table-column>
-        <el-table-column prop="six" label="启用状态"></el-table-column>
-        <el-table-column prop="seven" label="创建时间"></el-table-column>
-        <el-table-column prop="seven" label="创建人"></el-table-column>
+        <el-table-column label="合同模板编码">
+          <template slot-scope="scope">
+            {{ scope.row.code }}
+          </template>
+        </el-table-column>
+        <el-table-column label="业务板块">
+          <template slot-scope="scope">
+            {{ scope.row.bizName }}
+          </template>
+        </el-table-column>
+        <el-table-column label="合同类型">
+          <template slot-scope="scope">
+            {{ scope.row.typeName }}
+          </template>
+        </el-table-column>
+        <el-table-column label="合同模板名称">
+          <template slot-scope="scope">
+            {{ scope.row.name }}
+          </template>
+        </el-table-column>
+        <el-table-column label="版本号">
+          <template slot-scope="scope">
+            {{ scope.row.version }}
+          </template>
+        </el-table-column>
+        <el-table-column label="启用状态">
+          <template slot-scope="scope">
+            {{ scope.row.enabledFlag == 1 ? "启用" : "停用" }}
+          </template>
+        </el-table-column>
+        <el-table-column label="创建时间">
+          <template slot-scope="scope">
+            {{ scope.row.creationDate }}
+          </template>
+        </el-table-column>
+        <el-table-column label="创建人">
+          <template slot-scope="scope">
+            {{ scope.row.creatName }}
+          </template>
+        </el-table-column>
         <el-table-column label="下载次数"
           ><template slot-scope="scope">
             <u
               style="color:blue;cursor:pointer"
               @click="showApache(scope.row)"
-              >{{ scope.row.eight }}</u
+              >{{ scope.row.useNum }}</u
             >
           </template></el-table-column
         >
@@ -342,12 +393,17 @@ export default {
       downloadTime: "",
       // 弹窗的标题
       dialogTitle: "",
+      // 类型级联数据源
+      queryTypeListData: [],
+      searchSecond: [], // 顶部搜索区域的合同类型二级数据
       // 高级搜索里面数据源
       searchQuery: {
-        plate: "", // 业务板块
-        type: "", // 合同类型
-        name: "", // 合同模板名称
-        state: "" // 启用状态
+        bizId: null, // 业务板块id
+        bizName: null, // 业务板块名称
+        typeId: null, // 合同类型id
+        typeName: null, // 合同类型名称
+        name: null, // 合同模板名称
+        enabledFlag: null // 是否通用 1是 0否
       },
       // 创建合同模板数据
       createQuery: {
@@ -374,41 +430,7 @@ export default {
         c: "",
         d: ""
       },
-      tableData: [
-        {
-          id: 1,
-          one: "WYGL",
-          two: "商业合同类",
-          three: "案场合同",
-          four: "4-1 餐饮厨房油烟净化系统",
-          five: "启用",
-          six: "2021/4/30",
-          seven: "张三",
-          eight: "12"
-        },
-        {
-          id: 2,
-          one: "WYGL",
-          two: "商业合同类",
-          three: "案场合同",
-          four: "4-1 餐饮厨房油烟净化系统",
-          five: "启用",
-          six: "2021/4/30",
-          seven: "张三",
-          eight: "12"
-        },
-        {
-          id: 3,
-          one: "WYGL",
-          two: "商业合同类",
-          three: "案场合同",
-          four: "4-1 餐饮厨房油烟净化系统",
-          five: "启用",
-          six: "2021/4/30",
-          seven: "张三",
-          eight: "12"
-        },
-      ],
+      tableData: [],
       downloadRecord: [
         {
           id: 0,
@@ -462,17 +484,50 @@ export default {
       console.log("合同类型", this.searchQuery.type);
       console.log("合同模板名称", this.searchQuery.name);
       console.log("启用状态", this.searchQuery.state);
+
+      this.querylist(this.searchQuery);
     },
     reset(query = {}) {
       console.log("点击了重置按钮");
-      this.searchQuery.plate = "";
-      this.searchQuery.type = "";
-      this.searchQuery.name = "";
-      this.searchQuery.state = "";
+      this.searchQuery = {};
     },
     // 导出
     exportTemplate() {
-      console.log("导出");
+      console.log("导出点击事件");
+      var queryFilter = {
+        condition: {
+          业务板块: this.searchQuery.bizName,
+          合同类型: this.searchQuery.typeName,
+          合同模板名称: this.searchQuery.name,
+          启用状态: this.searchQuery.enabledFlag === "1" ? "启用" : "停用"
+        },
+        params: {
+          bizId: this.searchQuery.bizId, // 业务板块id
+          typeId: this.searchQuery.typeId, // 合同类型id
+          name: this.searchQuery.name, // 合同模板名称
+          enabledFlag: this.searchQuery.enabledFlag // 启用状态 1启用 0停用
+        }
+      };
+      var para = {
+        queryFilter: queryFilter
+      };
+      console.log("获取数据", para);
+      this.$api.templateExport2(para).then(res => {
+        // console.log("获取类型级联", res);
+        // this.queryTypeListData = res;
+        // console.log("获取类型级联1", this.queryTypeListData);
+        let content = res;
+        // 组装a标签
+        let elink = document.createElement("a");
+        // 设置下载文件名
+        elink.download = "合同模板.xlsx";
+        elink.style.display = "none";
+        let blob = new Blob([content], { type: "application/xlsx" });
+        elink.href = URL.createObjectURL(blob);
+        document.body.appendChild(elink);
+        elink.click();
+        document.body.removeChild(elink);
+      });
     },
     // 创建合同模板中取消按钮
     createQueryCancelBtn(e) {
@@ -493,7 +548,37 @@ export default {
     // 下载次数上面数字的点击事件
     showApache(row) {
       this.showApacheVisible = true;
-      console.log(row, "table行内容");
+      console.log(row, "下载次数上面数字的点击事件");
+      this.dialogVisible = false;
+      
+      this.$api.historList().then(res => {
+        console.log("获取类型级联", res);
+        this.queryTypeListData = res;
+        console.log("获取类型级联1", this.queryTypeListData);
+      });
+    },
+    // 获取类型级联
+    queryTypeList: function() {
+      this.$api.queryTypeList().then(res => {
+        console.log("获取类型级联", res);
+        this.queryTypeListData = res;
+        console.log("获取类型级联1", this.queryTypeListData);
+      });
+    },
+    changeSearchPlate(e) {
+      console.log("搜索里面拿到到业务板块数据", e);
+      this.searchSecond = this.queryTypeListData.filter(
+        item => item.id == e
+      )[0].children;
+      this.searchQuery.bizName = this.queryTypeListData.filter(
+        item => item.id == e
+      )[0].dataName;
+    },
+    changeSearchType(e) {
+      console.log("搜索里面获取二级数据", e);
+      this.searchQuery.typeName = this.searchSecond.filter(
+        item => item.id == e
+      )[0].dataName;
     },
     // 点击下载记录页面上的查询按钮showApacheQuery
     showApacheRequest(e) {
@@ -562,20 +647,43 @@ export default {
       console.log(this.formModal1, "formModal内容");
     },
     enabledHandle() {
-      console.log("启用");
+      console.log("启用点击事件");
     },
     disableHandle() {
-      console.log("停用");
+      console.log("停用点击事件");
     },
     deleteHandle() {
-      console.log("删除");
+      console.log("删除点击事件");
     },
     checkTemplate(e) {
-      console.log("查看模板");
+      console.log("查看模板点击事件");
     },
     downloadHandle(e) {
-      console.log("下载");
+      console.log("下载点击事件");
+
+    },
+    querylist: function(e) {
+      const para = {
+        pageBean: {
+          page: "1",
+          pageSize: "20",
+          showTotal: true
+        },
+        params: e
+      };
+      this.$api.querylist(para).then(res => {
+        console.log("获取类型级联1", res);
+        this.tableData = res.rows;
+        console.log("获取类型级联2", this.tableData);
+      });
     }
+  },
+  created() {
+    // 列表数据请求
+    this.querylist();
+
+    // 获取类型级联
+    this.queryTypeList();
   }
 };
 </script>

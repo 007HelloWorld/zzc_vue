@@ -89,7 +89,7 @@
                   </el-col>
                   <el-col :span="6">
                     <el-form-item label="启用状态">
-                      <el-select v-model="searchQuery.common">
+                      <el-select v-model="searchQuery.enabledFlag">
                         <el-option label="启用" value="1"></el-option>
                         <el-option label="停用" value="0"></el-option>
                       </el-select>
@@ -348,7 +348,10 @@
             <el-col :span="12">
               <el-form-item label="合同关键词">
                 <el-select
-                  v-model="createQuery.labelName"
+                  v-model="createQuery.labelId"
+                  multiple
+                  filterable
+                  allow-create
                   class="popup"
                   placeholder="请选择合同关键词"
                 >
@@ -364,11 +367,11 @@
             </el-col>
           </el-row>
         </el-form>
-        <div class="label">
+        <!-- <div class="label">
           <div class="label__sub">租赁<span> X</span></div>
           <div class="label__sub">租赁<span> X</span></div>
           <div class="label__sub">租赁<span> X</span></div>
-        </div>
+        </div> -->
         <span slot="footer" class="dialog-footer">
           <el-button
             type="primary"
@@ -495,7 +498,7 @@ export default {
         typeId: null, // 合同类型id
         typeName: null, // 合同类型名称
         name: null, // 合同模板名称
-        common: null // 是否通用 1是 0否
+        enabledFlag: null // 是否通用 1是 0否
       },
       second: [], // 创建合同模板中的合同类型二级数据
       searchSecond: [], // 顶部搜索区域的合同类型二级数据
@@ -512,21 +515,23 @@ export default {
         fileId: "", // 上传文件id
         fileName: "", // 上传文件名称
         path: "", // 上传模板路径
-        labelName: null // 合同标签名称
+        labelName: [], // 合同标签名称
+        labelId: null // 合同标签id
       },
       // 合同标签列表数据
-      getTypeKey: {
-        children: [],
-        id: "",
-        isParent: "",
-        key: "",
-        name: "",
-        open: "",
-        parentId: "",
-        sn: "",
-        text: "",
-        typeId: ""
-      },
+      getTypeKey: [],
+      // getTypeKey: {
+      //   children: [],
+      //   id: "",
+      //   isParent: "",
+      //   key: "",
+      //   name: "",
+      //   open: "",
+      //   parentId: "",
+      //   sn: "",
+      //   text: "",
+      //   typeId: ""
+      // },
       typeDict: {
         id: "",
         parentId: "",
@@ -653,27 +658,38 @@ export default {
     exportTemplate() {
       console.log("导出按钮");
       var queryFilter = {
-        condition:{
-          业务板块:this.searchQuery.bizName,
-          合同类型:this.searchQuery.typeName,
-          合同模板名称:this.searchQuery.name,
-          启用状态: this.searchQuery.common === "1" ? "启用":"停用"
+        condition: {
+          业务板块: this.searchQuery.bizName,
+          合同类型: this.searchQuery.typeName,
+          合同模板名称: this.searchQuery.name,
+          启用状态: this.searchQuery.enabledFlag === "1" ? "启用" : "停用"
         },
-        params:{
-          bizId:this.searchQuery.bizId, // 业务板块id
-          typeId:this.searchQuery.typeId, // 合同类型id
-          name:this.searchQuery.name, // 合同模板名称
-          enabledFlag:this.searchQuery.common // 启用状态 1启用 0停用
+        params: {
+          bizId: this.searchQuery.bizId, // 业务板块id
+          typeId: this.searchQuery.typeId, // 合同类型id
+          name: this.searchQuery.name, // 合同模板名称
+          enabledFlag: this.searchQuery.enabledFlag // 启用状态 1启用 0停用
         }
-      }
+      };
       var para = {
-        queryFilter:queryFilter
-      }
-      console.log("获取数据",para);
+        queryFilter: queryFilter
+      };
+      console.log("获取数据", para);
       this.$api.templateExport(para).then(res => {
-        console.log("获取类型级联", res);
-        this.queryTypeListData = res;
-        console.log("获取类型级联1", this.queryTypeListData);
+        // console.log("获取类型级联", res);
+        // this.queryTypeListData = res;
+        // console.log("获取类型级联1", this.queryTypeListData);
+        let content = res;
+        // 组装a标签
+        let elink = document.createElement("a");
+        // 设置下载文件名
+        elink.download = "合同模板.xlsx";
+        elink.style.display = "none";
+        let blob = new Blob([content], { type: "application/xlsx" });
+        elink.href = URL.createObjectURL(blob);
+        document.body.appendChild(elink);
+        elink.click();
+        document.body.removeChild(elink);
       });
     },
     // 创建合同模板中取消按钮
@@ -683,12 +699,34 @@ export default {
     },
     // 创建合同模板中确定按钮
     createQuerySureBtn(createQueryRef, createQuery) {
-      console.log("获取创建合同模板数据", this.createQuery);
+
+      if (createQuery.labelId.length > 0) {
+        var getTypeKeyArr = this.getTypeKey;
+        var labelNameArr = [];
+        // 遍历总的数据源
+        getTypeKeyArr.forEach(function(itemKey, indexKey) {
+          createQuery.labelId.forEach(function(itemId, indexId) {
+            if(itemKey.id === itemId){
+              labelNameArr.push(itemKey.name);
+            }
+          });
+        });
+        this.createQuery.labelName = labelNameArr.join(",");
+        console.log("获取创建合同模板数据-----2", this.createQuery.labelName);
+      }else{
+        this.createQuery.labelName = null;
+        this.createQuery.labelId = null;
+      }
+      
       this.$refs[createQueryRef].validate(valid => {
         if (valid) {
           this.dialogVisible = false;
           // 将common转int类型
           this.createQuery.common = parseInt(this.createQuery.common);
+
+          var labelNameId = this.createQuery.labelId;
+          this.createQuery.labelId = labelNameId .join(",");
+          console.log("获取创建合同模板数据-----1", this.createQuery.labelId);
 
           // 如果是更新标题
           if (this.dialogTitle === "更新") {
@@ -721,10 +759,12 @@ export default {
       });
     },
     changePlate(e) {
-      console.log("拿到到业务板块数据", e);
+      console.log("拿到到业务板块数据-----e", e);
+      console.log("拿到到业务板块数据-----queryTypeListData", this.queryTypeListData);
       this.second = this.queryTypeListData.filter(
         item => item.id == e
       )[0].children;
+      console.log("拿到到业务板块数据-----second", this.second);
       this.typeDict = "";
       this.createQuery.bizName = this.queryTypeListData.filter(
         item => item.id == e
@@ -773,15 +813,16 @@ export default {
     // 更新事件
     updateClick(e) {
       console.log("更新事件", e);
+      if(e.labelId != undefined){
+        e.labelId = e.labelId.split(",");
+      }
+      if(e.labelName != undefined){
+        e.labelName = e.labelName.split(",");
+      }
       this.createQuery = e;
       this.createQuery.common = e.common + ``;
       this.dialogTitle = "更新";
       this.dialogVisible = true;
-      // this.$api.templateUpdate().then(res => {
-      //   console.log("获取类型级联", res);
-      //   this.queryTypeListData = res;
-      //   console.log("获取类型级联1", this.queryTypeListData);
-      // });
     },
     // 启用事件
     enabledClick(e) {

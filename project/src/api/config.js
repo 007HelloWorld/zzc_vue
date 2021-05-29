@@ -114,3 +114,25 @@ export function patch(url, params) {
       });
   });
 }
+
+// 单独的文件发送请求
+export function postDownload(url, params) {
+  return new Promise((resolve, reject) => {
+    axios({
+      method:'post',
+      url:url,
+      data:params,
+      responseType:'blob'
+    }).then(
+      (res) => {
+        resolve(res.data);
+      },
+      (err) => {
+        reject(err.data);
+      }
+    )
+    .catch((err) => {
+      reject(err.data);
+    });
+  });
+}

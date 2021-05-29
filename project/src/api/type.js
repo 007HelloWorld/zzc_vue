@@ -2,7 +2,8 @@ import {
     post,
     get,
     del,
-    patch
+    patch,
+    postDownload
 } from './config'
 
 
@@ -60,7 +61,7 @@ export default {
     },
     // 模板管理导出接口  
     templateExport(params) {
-        return post("/legal/api/legal/v1/contractTemplate/export/1", params)
+        return postDownload("/legal/api/legal/v1/contractTemplate/export/1", params)
     },
     // 附件上传接口
     templateUploadFile(params) {
@@ -70,8 +71,17 @@ export default {
     templateBatchRemove(params) {
         return del("/legal/api/legal/v1/contractTemplate/remove", params)
     },
+    // 合同模板使用管理
     // 模板被使用列表导出接口  
     templateExport2(params) {
-        return post("/legal/api/legal/v1/contractTemplate/export/2", params)
+        return postDownload("/legal/api/legal/v1/contractTemplate/export/2", params)
+    },
+    // 列表数据
+    querylist(params) {
+        return post("/legal/api/legal/v1/contractTemplate/queryList", params)
+    },
+    // 下载次数列表
+    historList(params,id) {
+        return post("/legal/api/legal/v1/contractUseTemplateHistory/list/"+id, params)
     },
 }
